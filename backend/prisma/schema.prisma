@@ -1,0 +1,211 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+enum UserRole {
+  admin
+  finance
+  app_owner
+}
+
+enum BillingCycle {
+  monthly
+  annual
+}
+
+enum AppStatus {
+  active
+  inactive
+  pending_review
+}
+
+enum RecommendationType {
+  reclaim_license
+  downgrade_plan
+  consolidate_tools
+  renegotiate_contract
+  terminate_subscription
+}
+
+enum RecommendationStatus {
+  pending
+  approved
+  rejected
+  implemented
+}
+
+enum ImpactLevel {
+  low
+  medium
+  high
+}
+
+enum ConfidenceLevel {
+  low
+  medium
+  high
+}
+
+enum LicenseStatus {
+  active
+  inactive
+  pending
+}
+
+model Organization {
+  id        String   @id @default(uuid())
+  name      String
+  domain    String   @unique
+  logo      String?
+  createdAt DateTime @default(now()) @map("created_at")
+  updatedAt DateTime @updatedAt @map("updated_at")
+
+  users    User[]
+  saasApps SaaSApplication[]
+
+  @@map("organizations")
+}
+
+model User {
+  id             String       @id @default(uuid())
+  email          String       @unique
+  password       String
+  name           String
+  role           UserRole     @default(app_owner)
+  avatar         String?
+  organizationId String       @map("organization_id")
+  createdAt      DateTime     @default(now()) @map("created_at")
+  updatedAt      DateTime     @updatedAt @map("updated_at")
+
+  organization Organization  @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+  ownedApps    SaaSApplication[] @relation("AppOwner")
+  approvals    Approval[]
+  auditLogs    AuditLog[]
+  licenses     License[]
+
+  @@map("users")
+}
+
+model SaaSApplication {
+  id                 String      @id @default(uuid())
+  name               String
+  logo               String?
+  category           String
+  vendor             String
+  licensesPurchased  Int         @map("licenses_purchased")
+  licensesUsed       Int         @map("licenses_used")
+  costPerLicense     Float       @map("cost_per_license")
+  billingCycle       BillingCycle @map("billing_cycle")
+  renewalDate        DateTime    @map("renewal_date")
+  ownerDepartment    String      @map("owner_department")
+  ownerUserId        String?     @map("owner_user_id")
+  contractStartDate  DateTime    @map("contract_start_date")
+  contractEndDate    DateTime    @map("contract_end_date")
+  status             AppStatus   @default(active)
+  organizationId     String      @map("organization_id")
+  createdAt          DateTime    @default(now()) @map("created_at")
+  updatedAt          DateTime    @updatedAt @map("updated_at")
+
+  organization    Organization     @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+  owner           User?            @relation("AppOwner", fields: [ownerUserId], references: [id])
+  licenses        License[]
+  usageMetrics    UsageMetric[]
+  recommendations Recommendation[]
+
+  @@map("saas_applications")
+}
+
+model License {
+  id              String        @id @default(uuid())
+  saasAppId       String        @map("saas_app_id")
+  userId          String        @map("user_id")
+  userEmail       String        @map("user_email")
+  userName        String        @map("user_name")
+  assignedDate    DateTime      @map("assigned_date")
+  lastActiveDate  DateTime?     @map("last_active_date")
+  monthlyActiveDays Int         @default(0) @map("monthly_active_days")
+  status          LicenseStatus @default(active)
+  createdAt       DateTime      @default(now()) @map("created_at")
+  updatedAt       DateTime      @updatedAt @map("updated_at")
+
+  saasApp SaaSApplication @relation(fields: [saasAppId], references: [id], onDelete: Cascade)
+  user    User            @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@map("licenses")
+}
+
+model UsageMetric {
+  id                 String   @id @default(uuid())
+  saasAppId          String   @map("saas_app_id")
+  month              String   // YYYY-MM format
+  activeUsers        Int      @map("active_users")
+  totalLicenses      Int      @map("total_licenses")
+  utilizationRate    Float    @map("utilization_rate")
+  totalLogins        Int      @map("total_logins")
+  avgSessionDuration Float    @map("avg_session_duration") // minutes
+  createdAt          DateTime @default(now()) @map("created_at")
+
+  saasApp SaaSApplication @relation(fields: [saasAppId], references: [id], onDelete: Cascade)
+
+  @@unique([saasAppId, month])
+  @@map("usage_metrics")
+}
+
+model Recommendation {
+  id                      String               @id @default(uuid())
+  type                    RecommendationType
+  saasAppId               String               @map("saas_app_id")
+  saasAppName             String               @map("saas_app_name")
+  title                   String
+  description             String
+  estimatedMonthlySavings Float                @map("estimated_monthly_savings")
+  estimatedAnnualSavings  Float                @map("estimated_annual_savings")
+  affectedUsers           Int                  @map("affected_users")
+  affectedTeams           String[]             @map("affected_teams")
+  impactLevel             ImpactLevel          @map("impact_level")
+  confidenceLevel         ConfidenceLevel      @map("confidence_level")
+  status                  RecommendationStatus @default(pending)
+  createdAt               DateTime             @default(now()) @map("created_at")
+  updatedAt               DateTime             @updatedAt @map("updated_at")
+
+  saasApp   SaaSApplication @relation(fields: [saasAppId], references: [id], onDelete: Cascade)
+  approvals Approval[]
+
+  @@map("recommendations")
+}
+
+model Approval {
+  id               String   @id @default(uuid())
+  recommendationId String   @map("recommendation_id")
+  approvedByUserId String   @map("approved_by_user_id")
+  approvedByName   String   @map("approved_by_name")
+  action           String   // 'approved' | 'rejected'
+  reason           String?
+  timestamp        DateTime @default(now())
+
+  recommendation Recommendation @relation(fields: [recommendationId], references: [id], onDelete: Cascade)
+  approvedBy     User           @relation(fields: [approvedByUserId], references: [id], onDelete: Cascade)
+
+  @@map("approvals")
+}
+
+model AuditLog {
+  id         String   @id @default(uuid())
+  userId     String   @map("user_id")
+  userName   String   @map("user_name")
+  action     String
+  entityType String   @map("entity_type")
+  entityId   String   @map("entity_id")
+  details    Json     @default("{}")
+  ipAddress  String?  @map("ip_address")
+  timestamp  DateTime @default(now())
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@map("audit_logs")
+}
