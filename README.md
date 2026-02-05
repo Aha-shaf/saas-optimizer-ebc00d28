@@ -1,73 +1,217 @@
-# Welcome to your Lovable project
+# SaaS Cost Optimizer
 
-## Project info
+A production-ready, multi-tenant SaaS web application for automated SaaS cost optimization used by IT and Finance teams in mid-to-large enterprises.
 
-**URL**: https://lovable.dev/projects/REPLACE_WITH_PROJECT_ID
+## Tech Stack
 
-## How can I edit this code?
+- **Frontend**: React + TypeScript + Vite
+- **UI**: Tailwind CSS + shadcn/ui
+- **Backend**: Node.js + Express (TypeScript)
+- **Database**: PostgreSQL
+- **ORM**: Prisma
+- **Auth**: JWT-based authentication
+- **Charts**: Recharts
+- **State Management**: Zustand + React Query
 
-There are several ways of editing your application.
+## Project Structure
 
-**Use Lovable**
+```
+├── backend/                  # Backend API
+│   ├── prisma/
+│   │   ├── schema.prisma    # Database schema
+│   │   └── seed.ts          # Seed data
+│   ├── src/
+│   │   ├── middleware/      # Auth middleware
+│   │   ├── routes/          # API routes
+│   │   └── index.ts         # Express server
+│   ├── package.json
+│   └── tsconfig.json
+├── src/                      # Frontend React app
+│   ├── components/          # UI components
+│   ├── pages/               # Page components
+│   ├── stores/              # Zustand stores
+│   ├── lib/                 # Utilities
+│   └── types/               # TypeScript types
+├── docker-compose.yml       # Docker orchestration
+└── README.md
+```
 
-Simply visit the [Lovable Project](https://lovable.dev/projects/REPLACE_WITH_PROJECT_ID) and start prompting.
+## Quick Start with Docker
 
-Changes made via Lovable will be committed automatically to this repo.
+The easiest way to run the full stack locally:
 
-**Use your preferred IDE**
+```bash
+# Start all services (PostgreSQL, Backend, Frontend)
+docker-compose up -d
 
-If you want to work locally using your own IDE, you can clone this repo and push changes. Pushed changes will also be reflected in Lovable.
+# View logs
+docker-compose logs -f
 
-The only requirement is having Node.js & npm installed - [install with nvm](https://github.com/nvm-sh/nvm#installing-and-updating)
+# Run database migrations and seed data
+docker-compose exec backend npx prisma migrate dev
+docker-compose exec backend npm run db:seed
 
-Follow these steps:
+# Stop services
+docker-compose down
+```
 
-```sh
-# Step 1: Clone the repository using the project's Git URL.
-git clone <YOUR_GIT_URL>
+Access the application:
+- Frontend: http://localhost:5173
+- Backend API: http://localhost:3001/api
+- Health check: http://localhost:3001/api/health
 
-# Step 2: Navigate to the project directory.
-cd <YOUR_PROJECT_NAME>
+## Manual Setup (Without Docker)
 
-# Step 3: Install the necessary dependencies.
-npm i
+### Prerequisites
 
-# Step 4: Start the development server with auto-reloading and an instant preview.
+- Node.js 18+
+- PostgreSQL 14+
+- npm or yarn
+
+### 1. Database Setup
+
+```bash
+# Create PostgreSQL database
+createdb saas_optimizer
+
+# Or via psql
+psql -U postgres -c "CREATE DATABASE saas_optimizer;"
+```
+
+### 2. Backend Setup
+
+```bash
+cd backend
+
+# Install dependencies
+npm install
+
+# Copy environment variables
+cp .env.example .env
+
+# Edit .env with your database URL
+# DATABASE_URL="postgresql://postgres:postgres@localhost:5432/saas_optimizer?schema=public"
+
+# Generate Prisma client
+npm run db:generate
+
+# Run migrations
+npm run db:migrate
+
+# Seed the database
+npm run db:seed
+
+# Start development server
 npm run dev
 ```
 
-**Edit a file directly in GitHub**
+### 3. Frontend Setup
 
-- Navigate to the desired file(s).
-- Click the "Edit" button (pencil icon) at the top right of the file view.
-- Make your changes and commit the changes.
+```bash
+# From project root
+npm install
+npm run dev
+```
 
-**Use GitHub Codespaces**
+## Default Login Credentials
 
-- Navigate to the main page of your repository.
-- Click on the "Code" button (green button) near the top right.
-- Select the "Codespaces" tab.
-- Click on "New codespace" to launch a new Codespace environment.
-- Edit files directly within the Codespace and commit and push your changes once you're done.
+After seeding, use these accounts:
 
-## What technologies are used for this project?
+| Role | Email | Password |
+|------|-------|----------|
+| Admin (IT) | sarah.chen@acme.com | password123 |
+| Finance | michael.ross@acme.com | password123 |
+| App Owner | emily.johnson@acme.com | password123 |
 
-This project is built with:
+## API Endpoints
 
-- Vite
-- TypeScript
-- React
-- shadcn-ui
-- Tailwind CSS
+### Authentication
+- `POST /api/auth/login` - Login
+- `GET /api/auth/me` - Get current user
+- `POST /api/auth/logout` - Logout
 
-## How can I deploy this project?
+### Users
+- `GET /api/users` - List organization users
+- `POST /api/users` - Create user (admin)
+- `PATCH /api/users/:id` - Update user (admin)
+- `DELETE /api/users/:id` - Delete user (admin)
 
-Simply open [Lovable](https://lovable.dev/projects/REPLACE_WITH_PROJECT_ID) and click on Share -> Publish.
+### SaaS Applications
+- `GET /api/apps` - List all apps
+- `GET /api/apps/:id` - Get app details
+- `POST /api/apps` - Create app (admin)
+- `PATCH /api/apps/:id` - Update app
+- `DELETE /api/apps/:id` - Delete app (admin)
 
-## Can I connect a custom domain to my Lovable project?
+### Licenses
+- `GET /api/licenses/app/:appId` - Get licenses for app
+- `GET /api/licenses/unused` - Get unused licenses
+- `POST /api/licenses` - Assign license
+- `DELETE /api/licenses/:id` - Revoke license
 
-Yes, you can!
+### Recommendations
+- `GET /api/recommendations` - List recommendations
+- `GET /api/recommendations/:id` - Get recommendation
+- `POST /api/recommendations/:id/approve` - Approve
+- `POST /api/recommendations/:id/reject` - Reject
+- `POST /api/recommendations/:id/implement` - Implement
 
-To connect a domain, navigate to Project > Settings > Domains and click Connect Domain.
+### Dashboard
+- `GET /api/dashboard/metrics` - Dashboard metrics
+- `GET /api/dashboard/spend-by-category` - Spend breakdown
+- `GET /api/dashboard/spend-trend` - Monthly trends
+- `GET /api/dashboard/renewals` - Upcoming renewals
 
-Read more here: [Setting up a custom domain](https://docs.lovable.dev/features/custom-domain#custom-domain)
+### Audit Logs
+- `GET /api/audit` - List audit logs (admin)
+- `GET /api/audit/entity/:type/:id` - Logs for entity
+
+## Environment Variables
+
+### Backend (.env)
+```
+DATABASE_URL="postgresql://postgres:postgres@localhost:5432/saas_optimizer?schema=public"
+JWT_SECRET="your-super-secret-jwt-key-change-in-production"
+JWT_EXPIRES_IN="7d"
+PORT=3001
+NODE_ENV=development
+FRONTEND_URL="http://localhost:5173"
+```
+
+### Frontend (.env.local)
+```
+VITE_API_URL=http://localhost:3001/api
+```
+
+## Features
+
+- **Multi-tenant**: Organization-based data isolation
+- **RBAC**: Admin, Finance, and App Owner roles
+- **SaaS Inventory**: Track all SaaS applications
+- **Usage Analytics**: Monitor license utilization
+- **Cost Optimization**: AI-powered recommendations
+- **Governance**: Approval workflows with audit trails
+- **Dashboards**: Role-based analytics views
+
+## Development
+
+```bash
+# Run backend in watch mode
+cd backend && npm run dev
+
+# Run frontend
+npm run dev
+
+# Open Prisma Studio (database GUI)
+cd backend && npm run db:studio
+
+# Format code
+npm run format
+
+# Lint
+npm run lint
+```
+
+## License
+
+MIT
