@@ -4,23 +4,24 @@ import { useAuthStore } from '@/stores/authStore';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
-import { TrendingDown, Chrome, Lock, ArrowRight } from 'lucide-react';
+import { TrendingDown, Lock, ArrowRight } from 'lucide-react';
 import { motion } from 'framer-motion';
+import { toast } from 'sonner';
 
 export default function Login() {
   const navigate = useNavigate();
   const { login, isLoading } = useAuthStore();
   const [email, setEmail] = useState('sarah.chen@acme.com');
+  const [password, setPassword] = useState('password123');
 
   const handleLogin = async (e: React.FormEvent) => {
     e.preventDefault();
-    await login(email);
-    navigate('/');
-  };
-
-  const handleSSOLogin = async () => {
-    await login('sarah.chen@acme.com', 'admin');
-    navigate('/');
+    try {
+      await login(email, password);
+      navigate('/');
+    } catch (error: any) {
+      toast.error(error.message || 'Login failed. Check your credentials.');
+    }
   };
 
   return (
@@ -87,28 +88,6 @@ export default function Login() {
             </p>
           </div>
 
-          {/* SSO Button */}
-          <Button
-            variant="outline"
-            className="w-full h-12 gap-3"
-            onClick={handleSSOLogin}
-            disabled={isLoading}
-          >
-            <Chrome className="w-5 h-5" />
-            Continue with Google Workspace
-          </Button>
-
-          <div className="relative">
-            <div className="absolute inset-0 flex items-center">
-              <span className="w-full border-t border-border" />
-            </div>
-            <div className="relative flex justify-center text-xs uppercase">
-              <span className="bg-background px-2 text-muted-foreground">
-                Or continue with email
-              </span>
-            </div>
-          </div>
-
           {/* Email Form */}
           <form onSubmit={handleLogin} className="space-y-6">
             <div className="space-y-2">
@@ -125,15 +104,13 @@ export default function Login() {
             <div className="space-y-2">
               <div className="flex items-center justify-between">
                 <Label htmlFor="password">Password</Label>
-                <button type="button" className="text-sm text-primary hover:underline">
-                  Forgot password?
-                </button>
               </div>
               <Input
                 id="password"
                 type="password"
                 placeholder="••••••••"
-                defaultValue="password"
+                value={password}
+                onChange={(e) => setPassword(e.target.value)}
                 className="h-12"
               />
             </div>
@@ -152,13 +129,6 @@ export default function Login() {
             <Lock className="w-4 h-4" />
             Protected by enterprise-grade security
           </div>
-
-          <p className="text-center text-sm text-muted-foreground">
-            Don't have an account?{' '}
-            <button className="text-primary hover:underline font-medium">
-              Request access
-            </button>
-          </p>
         </motion.div>
       </div>
     </div>

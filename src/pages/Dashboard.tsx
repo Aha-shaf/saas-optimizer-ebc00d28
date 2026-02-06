@@ -7,17 +7,17 @@ import {
   UpcomingRenewals,
   RecentRecommendations,
 } from '@/components/dashboard';
-import { mockDashboardMetrics, mockSaaSApps } from '@/data/mockData';
 import { useAuthStore } from '@/stores/authStore';
+import { useDashboardMetrics } from '@/hooks/useApi';
 import {
   DollarSign,
   Package,
   Users,
   TrendingDown,
-  AlertTriangle,
   Calendar,
 } from 'lucide-react';
 import { motion } from 'framer-motion';
+import { Skeleton } from '@/components/ui/skeleton';
 
 const container = {
   hidden: { opacity: 0 },
@@ -36,19 +36,30 @@ const item = {
 
 export default function Dashboard() {
   const { user } = useAuthStore();
-  const metrics = mockDashboardMetrics;
-  
-  // Calculate redundant tools
-  const categoryCount = mockSaaSApps.reduce((acc, app) => {
-    acc[app.category] = (acc[app.category] || 0) + 1;
-    return acc;
-  }, {} as Record<string, number>);
-  const redundantCategories = Object.entries(categoryCount).filter(([_, count]) => count > 1).length;
+  const { data: metrics, isLoading } = useDashboardMetrics();
+
+  if (isLoading || !metrics) {
+    return (
+      <div className="min-h-screen">
+        <Header
+          title={`Welcome back, ${user?.name?.split(' ')[0] || 'User'}`}
+          subtitle="Here's what's happening with your SaaS portfolio"
+        />
+        <div className="p-8 space-y-6">
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
+            {Array.from({ length: 4 }).map((_, i) => (
+              <Skeleton key={i} className="h-32 rounded-xl" />
+            ))}
+          </div>
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div className="min-h-screen">
       <Header
-        title={`Welcome back, ${user?.name.split(' ')[0]}`}
+        title={`Welcome back, ${user?.name?.split(' ')[0] || 'User'}`}
         subtitle="Here's what's happening with your SaaS portfolio"
       />
 
@@ -63,26 +74,26 @@ export default function Dashboard() {
           <motion.div variants={item} className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
             <StatsCard
               title="Total SaaS Spend"
-              value={`$${metrics.total_saas_spend.toLocaleString()}`}
-              change={metrics.monthly_spend_trend}
+              value={`$${(metrics.totalSpend || 0).toLocaleString()}`}
+              change={metrics.spendTrend}
               changeLabel="vs last month"
               icon={<DollarSign className="w-6 h-6" />}
               variant="primary"
             />
             <StatsCard
               title="Total Applications"
-              value={metrics.total_apps}
+              value={metrics.totalApps || 0}
               icon={<Package className="w-6 h-6" />}
             />
             <StatsCard
               title="Unused Licenses"
-              value={metrics.unused_licenses}
+              value={metrics.unusedLicenses || 0}
               icon={<Users className="w-6 h-6" />}
               variant="warning"
             />
             <StatsCard
               title="Potential Savings"
-              value={`$${metrics.potential_savings.toLocaleString()}`}
+              value={`$${(metrics.potentialSavings || 0).toLocaleString()}`}
               icon={<TrendingDown className="w-6 h-6" />}
               variant="success"
             />
@@ -91,22 +102,20 @@ export default function Dashboard() {
           {/* Secondary Metrics */}
           <motion.div variants={item} className="grid grid-cols-1 md:grid-cols-3 gap-6">
             <StatsCard
-              title="Redundant Tool Categories"
-              value={redundantCategories}
-              icon={<AlertTriangle className="w-6 h-6" />}
-              variant="danger"
-            />
-            <StatsCard
               title="Upcoming Renewals"
-              value={metrics.upcoming_renewals}
+              value={metrics.upcomingRenewals || 0}
               icon={<Calendar className="w-6 h-6" />}
             />
             <StatsCard
               title="Active Users"
-              value={metrics.active_users}
-              change={2.4}
-              changeLabel="vs last month"
+              value={metrics.activeUsers || 0}
               icon={<Users className="w-6 h-6" />}
+            />
+            <StatsCard
+              title="Optimization Score"
+              value={`${metrics.optimizationScore || 0}%`}
+              icon={<TrendingDown className="w-6 h-6" />}
+              variant="success"
             />
           </motion.div>
 
@@ -116,7 +125,7 @@ export default function Dashboard() {
               <SpendTrendChart />
             </div>
             <div>
-              <OptimizationScore score={metrics.optimization_score} />
+              <OptimizationScore score={metrics.optimizationScore || 0} />
             </div>
           </motion.div>
 

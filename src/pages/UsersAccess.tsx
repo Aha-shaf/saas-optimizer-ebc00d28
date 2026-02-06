@@ -1,42 +1,29 @@
 import { Header } from '@/components/layout';
-import { mockUsers } from '@/data/mockData';
+import { useUsers } from '@/hooks/useApi';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { Input } from '@/components/ui/input';
 import {
-  Table,
-  TableBody,
-  TableCell,
-  TableHead,
-  TableHeader,
-  TableRow,
+  Table, TableBody, TableCell, TableHead, TableHeader, TableRow,
 } from '@/components/ui/table';
 import { Avatar, AvatarFallback } from '@/components/ui/avatar';
 import {
-  Search,
-  Plus,
-  MoreHorizontal,
-  Shield,
-  Users as UsersIcon,
-  UserCheck,
-  Settings,
+  Search, Plus, MoreHorizontal, Shield, Users as UsersIcon, UserCheck, Settings,
 } from 'lucide-react';
 import {
-  DropdownMenu,
-  DropdownMenuContent,
-  DropdownMenuItem,
-  DropdownMenuTrigger,
+  DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu';
 import { motion } from 'framer-motion';
 import { useState } from 'react';
+import { Skeleton } from '@/components/ui/skeleton';
 
-const roleLabels = {
+const roleLabels: Record<string, string> = {
   admin: 'IT Admin',
   finance: 'Finance',
   app_owner: 'App Owner',
 };
 
-const roleColors = {
+const roleColors: Record<string, string> = {
   admin: 'bg-primary/20 text-primary',
   finance: 'bg-success/20 text-success',
   app_owner: 'bg-info/20 text-info',
@@ -44,25 +31,32 @@ const roleColors = {
 
 export default function UsersAccess() {
   const [searchQuery, setSearchQuery] = useState('');
+  const { data: users = [], isLoading } = useUsers();
 
-  const filteredUsers = mockUsers.filter((user) =>
-    user.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
-    user.email.toLowerCase().includes(searchQuery.toLowerCase())
+  const filteredUsers = users.filter((user: any) =>
+    (user.name || '').toLowerCase().includes(searchQuery.toLowerCase()) ||
+    (user.email || '').toLowerCase().includes(searchQuery.toLowerCase())
   );
+
+  if (isLoading) {
+    return (
+      <div className="min-h-screen">
+        <Header title="Users & Access" subtitle="Loading..." />
+        <div className="p-8 space-y-4">
+          {Array.from({ length: 3 }).map((_, i) => (
+            <Skeleton key={i} className="h-16 rounded-lg" />
+          ))}
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div className="min-h-screen">
-      <Header
-        title="Users & Access"
-        subtitle="Manage user accounts and role permissions"
-      />
+      <Header title="Users & Access" subtitle="Manage user accounts and role permissions" />
 
       <div className="p-8">
-        <motion.div
-          initial={{ opacity: 0, y: 20 }}
-          animate={{ opacity: 1, y: 0 }}
-          transition={{ duration: 0.3 }}
-        >
+        <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.3 }}>
           {/* Stats */}
           <div className="grid grid-cols-1 md:grid-cols-4 gap-4 mb-6">
             <div className="bg-card border border-border rounded-lg p-4">
@@ -70,7 +64,7 @@ export default function UsersAccess() {
                 <UsersIcon className="w-8 h-8 text-primary" />
                 <div>
                   <p className="text-sm text-muted-foreground">Total Users</p>
-                  <p className="text-2xl font-bold text-foreground">{mockUsers.length}</p>
+                  <p className="text-2xl font-bold text-foreground">{users.length}</p>
                 </div>
               </div>
             </div>
@@ -80,7 +74,7 @@ export default function UsersAccess() {
                 <div>
                   <p className="text-sm text-muted-foreground">Admins</p>
                   <p className="text-2xl font-bold text-foreground">
-                    {mockUsers.filter((u) => u.role === 'admin').length}
+                    {users.filter((u: any) => u.role === 'admin').length}
                   </p>
                 </div>
               </div>
@@ -91,7 +85,7 @@ export default function UsersAccess() {
                 <div>
                   <p className="text-sm text-muted-foreground">Finance Users</p>
                   <p className="text-2xl font-bold text-foreground">
-                    {mockUsers.filter((u) => u.role === 'finance').length}
+                    {users.filter((u: any) => u.role === 'finance').length}
                   </p>
                 </div>
               </div>
@@ -102,7 +96,7 @@ export default function UsersAccess() {
                 <div>
                   <p className="text-sm text-muted-foreground">App Owners</p>
                   <p className="text-2xl font-bold text-foreground">
-                    {mockUsers.filter((u) => u.role === 'app_owner').length}
+                    {users.filter((u: any) => u.role === 'app_owner').length}
                   </p>
                 </div>
               </div>
@@ -113,17 +107,9 @@ export default function UsersAccess() {
           <div className="flex gap-4 mb-6">
             <div className="relative flex-1">
               <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 w-4 h-4 text-muted-foreground" />
-              <Input
-                placeholder="Search users..."
-                value={searchQuery}
-                onChange={(e) => setSearchQuery(e.target.value)}
-                className="pl-9"
-              />
+              <Input placeholder="Search users..." value={searchQuery} onChange={(e) => setSearchQuery(e.target.value)} className="pl-9" />
             </div>
-            <Button>
-              <Plus className="w-4 h-4 mr-2" />
-              Invite User
-            </Button>
+            <Button><Plus className="w-4 h-4 mr-2" />Invite User</Button>
           </div>
 
           {/* Users Table */}
@@ -134,59 +120,56 @@ export default function UsersAccess() {
                   <TableHead>User</TableHead>
                   <TableHead>Role</TableHead>
                   <TableHead>Status</TableHead>
-                  <TableHead>Last Active</TableHead>
                   <TableHead className="w-[70px]"></TableHead>
                 </TableRow>
               </TableHeader>
               <TableBody>
-                {filteredUsers.map((user) => (
-                  <TableRow key={user.id}>
-                    <TableCell>
-                      <div className="flex items-center gap-3">
-                        <Avatar className="h-10 w-10">
-                          <AvatarFallback className="bg-primary/10 text-primary">
-                            {user.name
-                              .split(' ')
-                              .map((n) => n[0])
-                              .join('')}
-                          </AvatarFallback>
-                        </Avatar>
-                        <div>
-                          <p className="font-medium text-foreground">{user.name}</p>
-                          <p className="text-sm text-muted-foreground">{user.email}</p>
-                        </div>
-                      </div>
-                    </TableCell>
-                    <TableCell>
-                      <Badge className={roleColors[user.role]}>
-                        {roleLabels[user.role]}
-                      </Badge>
-                    </TableCell>
-                    <TableCell>
-                      <div className="flex items-center gap-2">
-                        <span className="w-2 h-2 rounded-full bg-success animate-pulse-soft" />
-                        <span className="text-sm text-muted-foreground">Active</span>
-                      </div>
-                    </TableCell>
-                    <TableCell className="text-muted-foreground">Just now</TableCell>
-                    <TableCell>
-                      <DropdownMenu>
-                        <DropdownMenuTrigger asChild>
-                          <Button variant="ghost" size="icon">
-                            <MoreHorizontal className="w-4 h-4" />
-                          </Button>
-                        </DropdownMenuTrigger>
-                        <DropdownMenuContent align="end">
-                          <DropdownMenuItem>Edit User</DropdownMenuItem>
-                          <DropdownMenuItem>Change Role</DropdownMenuItem>
-                          <DropdownMenuItem className="text-destructive">
-                            Deactivate
-                          </DropdownMenuItem>
-                        </DropdownMenuContent>
-                      </DropdownMenu>
-                    </TableCell>
+                {filteredUsers.length === 0 ? (
+                  <TableRow>
+                    <TableCell colSpan={4} className="h-32 text-center text-muted-foreground">No users found</TableCell>
                   </TableRow>
-                ))}
+                ) : (
+                  filteredUsers.map((user: any) => (
+                    <TableRow key={user.id}>
+                      <TableCell>
+                        <div className="flex items-center gap-3">
+                          <Avatar className="h-10 w-10">
+                            <AvatarFallback className="bg-primary/10 text-primary">
+                              {(user.name || 'U').split(' ').map((n: string) => n[0]).join('')}
+                            </AvatarFallback>
+                          </Avatar>
+                          <div>
+                            <p className="font-medium text-foreground">{user.name}</p>
+                            <p className="text-sm text-muted-foreground">{user.email}</p>
+                          </div>
+                        </div>
+                      </TableCell>
+                      <TableCell>
+                        <Badge className={roleColors[user.role] || ''}>
+                          {roleLabels[user.role] || user.role}
+                        </Badge>
+                      </TableCell>
+                      <TableCell>
+                        <div className="flex items-center gap-2">
+                          <span className="w-2 h-2 rounded-full bg-success animate-pulse-soft" />
+                          <span className="text-sm text-muted-foreground">Active</span>
+                        </div>
+                      </TableCell>
+                      <TableCell>
+                        <DropdownMenu>
+                          <DropdownMenuTrigger asChild>
+                            <Button variant="ghost" size="icon"><MoreHorizontal className="w-4 h-4" /></Button>
+                          </DropdownMenuTrigger>
+                          <DropdownMenuContent align="end">
+                            <DropdownMenuItem>Edit User</DropdownMenuItem>
+                            <DropdownMenuItem>Change Role</DropdownMenuItem>
+                            <DropdownMenuItem className="text-destructive">Deactivate</DropdownMenuItem>
+                          </DropdownMenuContent>
+                        </DropdownMenu>
+                      </TableCell>
+                    </TableRow>
+                  ))
+                )}
               </TableBody>
             </Table>
           </div>

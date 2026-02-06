@@ -1,4 +1,4 @@
-import { NavLink, useLocation } from 'react-router-dom';
+import { NavLink, useLocation, useNavigate } from 'react-router-dom';
 import { cn } from '@/lib/utils';
 import {
   LayoutDashboard,
@@ -19,7 +19,6 @@ import {
   DropdownMenu,
   DropdownMenuContent,
   DropdownMenuItem,
-  DropdownMenuLabel,
   DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu';
@@ -33,7 +32,7 @@ const navigation = [
   { name: 'Audit Log', href: '/audit', icon: Shield },
 ];
 
-const roleLabels = {
+const roleLabels: Record<string, string> = {
   admin: 'IT Admin',
   finance: 'Finance',
   app_owner: 'App Owner',
@@ -41,7 +40,13 @@ const roleLabels = {
 
 export function Sidebar() {
   const location = useLocation();
-  const { user, logout, switchRole } = useAuthStore();
+  const navigate = useNavigate();
+  const { user, logout } = useAuthStore();
+
+  const handleLogout = () => {
+    logout();
+    navigate('/login');
+  };
 
   return (
     <aside className="flex flex-col w-64 min-h-screen bg-sidebar border-r border-sidebar-border">
@@ -107,12 +112,12 @@ export function Sidebar() {
             >
               <Avatar className="h-9 w-9">
                 <AvatarFallback className="bg-primary/20 text-primary text-sm font-medium">
-                  {user?.name.split(' ').map(n => n[0]).join('')}
+                  {user?.name?.split(' ').map(n => n[0]).join('') || '?'}
                 </AvatarFallback>
               </Avatar>
               <div className="flex flex-col items-start text-left min-w-0">
                 <span className="text-sm font-medium text-foreground truncate w-full">
-                  {user?.name}
+                  {user?.name || 'User'}
                 </span>
                 <span className="text-xs text-muted-foreground">
                   {user?.role && roleLabels[user.role]}
@@ -121,19 +126,8 @@ export function Sidebar() {
             </Button>
           </DropdownMenuTrigger>
           <DropdownMenuContent align="end" className="w-56">
-            <DropdownMenuLabel>Switch Role (Demo)</DropdownMenuLabel>
             <DropdownMenuSeparator />
-            <DropdownMenuItem onClick={() => switchRole('admin')}>
-              IT Admin
-            </DropdownMenuItem>
-            <DropdownMenuItem onClick={() => switchRole('finance')}>
-              Finance
-            </DropdownMenuItem>
-            <DropdownMenuItem onClick={() => switchRole('app_owner')}>
-              App Owner
-            </DropdownMenuItem>
-            <DropdownMenuSeparator />
-            <DropdownMenuItem onClick={logout} className="text-destructive">
+            <DropdownMenuItem onClick={handleLogout} className="text-destructive">
               <LogOut className="w-4 h-4 mr-2" />
               Sign out
             </DropdownMenuItem>
